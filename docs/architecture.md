@@ -27,8 +27,16 @@ Author: [YOUR_NAME]
 ```mermaid
 graph TD
     Client["Browser / HTMX Client"]
-    APIClient["API Client / Third-party"]
+    APIClient["API Client / Operator"]
+    ACMEServer["ACME Server (Let's Encrypt)"]
     
+    subgraph "OAuth 2.0 & ACME Challenge Protection"
+        OAuthPkg["pkg/oauth2<br/>- RFC 8707 Resource Indicators<br/>- Opaque Token & SHA-256 Storage<br/>- Gin Auth & Resource Middleware<br/>- OTel & slog Audit Log"]
+        ClientSDK["pkg/oauth2/client<br/>- In-Memory TTL Cache<br/>- Double-Checked Locking Refresh<br/>- http.RoundTripper Bearer Injection"]
+        SampleSrv["sample-server<br/>- ACME HTTP-01 Protection (/start, /complete)<br/>- Public Verification Endpoint (/.well-known)"]
+        OAuthCLI["cmd/oauth-cli<br/>- 9 Subcommands Evaluation Tool"]
+    end
+
     subgraph "Application Stack"
         WebSrv["cmd/web or cmd/app web<br/>(Standalone HTMX UI Server)"]
         CoreSrv["cmd/app server<br/>(Secure REST API Server)"]
@@ -51,6 +59,11 @@ graph TD
         Grafana["Grafana Dashboard"]
     end
     
+    OAuthCLI -->|Uses SDK| ClientSDK
+    ClientSDK -->|Issue Token| OAuthPkg
+    ClientSDK -->|OAuth-protected API| SampleSrv
+    ACMEServer -->|Unauthenticated Challenge Verify| SampleSrv
+    
     Client -->|HTTP / HTMX Polling| WebSrv
     APIClient -->|REST API / Bearer Auth| CoreSrv
     WebSrv --> WebPkg
@@ -70,7 +83,23 @@ graph TD
 
 ## 2. コアコンポーネント設計
 
-### 2.1 エントリーポイント構成 (マルチバイナリ & サブコマンド)
+### 2.1 OAuth 2.0 認可基盤 & ACME チャレンジ保護 (`pkg/oauth2`, `sample-server`, `cmd/oauth-cli`)
+- **認可サーバー & ミドルウェア (`pkg/oauth2`)**:
+  - `go get` 可能な外部依存フリー設計（`internal/` や `ent/` への依存なし）。
+  - RFC 8707 Resource Indicators 準拠の絶対URI検証（フラグメント禁止）。
+  - Opaque Token 発行、SHA-256 インデックス保存、bcrypt クライアントシークレット管理。
+  - Gin 保護ミドルウェア (`TokenAuthMiddleware`, `RequireResource`, `RequireScope`)。
+  - OpenTelemetry (RED/USE メトリクス、Span 属性) および `slog` 平文完全マスキング監査ログ (`log_type: "audit"`)。
+- **クライアント SDK (`pkg/oauth2/client`)**:
+  - インメモリ TTL キャッシュ、Double-Checked Locking による並行競合防止、有効期限切れ前自動更新。
+  - `http.RoundTripper` 実装により、HTTP リクエストの URI から自動的に `resource` を識別して Bearer トークンを自動注入。
+- **リファレンス実装 (`sample-server/`)**:
+  - ACME HTTP-01 チャレンジ (RFC 8555) の開始 (`/start`)・終了 (`/complete`) を OAuth 2.0 で保護。
+  - ACME サーバーによるパブリック検証 (`/.well-known/acme-challenge/:token`) は未認証アクセスを許可。
+- **評価用 CLI ツール (`cmd/oauth-cli`)**:
+  - 9つのサブコマンド (`register`, `token`, `challenge-start`, `challenge-verify`, `challenge-complete`, `get-cert`, `introspect`, `revoke`, `call`) によるフル機能評価ツール。
+
+### 2.2 エントリーポイント構成 (マルチバイナリ & サブコマンド)
 - **`cmd/app`**:
   - `server`: コア REST API サーバー起動（TLS、自動証明書、Bearer 認証、バックアップ/リストア API、pprof、Prometheus Exporter）。
   - `web`: スタンドアロン HTMX Web ダッシュボードの起動（または `--ssg-export` による静的サイト出力）。
@@ -112,10 +141,11 @@ graph TD
 ```mermaid
 graph LR
     subgraph "Layer 1"
-        L1["Unit & Integration<br/><code>make test</code><br/>- Isolated In-memory DB<br/>- Coverage > 80%<br/>- goleak check"]
+        L1["Unit & Integration<br/><code>make test</code><br/>- Isolated In-memory DB<br/>- Coverage 100% (OAuth2)<br/>- goleak check"]
     end
     subgraph "Layer 2"
-        L2["Standalone SQLite E2E<br/><code>make sqlite-e2e</code><br/>- No Docker<br/>- Auth & Backup / Restore<br/>- < 3 sec execution"]
+        L2A["Standalone SQLite E2E<br/><code>make sqlite-e2e</code><br/>- No Docker<br/>- Auth & Backup / Restore<br/>- < 3 sec execution"]
+        L2B["OAuth2 & ACME E2E<br/><code>make oauth-e2e</code><br/>- Client Registration<br/>- RFC 8707 Token & Middleware<br/>- HTTP-01 Full Flow"]
     end
     subgraph "Layer 3"
         L3["HTMX Frontend E2E<br/><code>make frontend-e2e</code><br/>- Headless Chrome Snapshot<br/>- HTMX Swaps & Cards<br/>- HTML Report Generated"]
@@ -124,5 +154,9 @@ graph LR
         L4["Docker Compose E2E<br/><code>make docker-e2e</code><br/>- Multi-container Stack<br/>- PostgreSQL + VictoriaMetrics<br/>- Grafana UI & Metric Assertions"]
     end
     
-    L1 --> L2 --> L3 --> L4
+    L1 --> L2A
+    L1 --> L2B
+    L2A --> L3
+    L2B --> L3
+    L3 --> L4
 ```

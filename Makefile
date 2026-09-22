@@ -1,29 +1,21 @@
-# Makefile for Go Development & Custom Skills Management
+# Makefile for OAuth 2.0 Client Credentials Grant & Custom Skills Management
 
-.PHONY: help check install install-agents install-all self-eval generate test fmt lint tidy vulncheck build release-check release-snapshot license-check license-add migration-diff clean openapi-lint publish-pr ai-pr run sqlite-e2e frontend-e2e docker-e2e ssg-build demo
+.PHONY: help check install install-agents install-all self-eval test fmt lint tidy vulncheck build release-check release-snapshot license-check license-add clean publish-pr ai-pr oauth-e2e
 
 help:
 	@echo "Available commands:"
 	@echo "  Go Development & Testing:"
-	@echo "    openapi-lint     Validate OpenAPI spec with Spectral"
-	@echo "    generate         Generate OpenAPI and ent entity code"
 	@echo "    fmt              Format Go source files"
 	@echo "    lint             Run golangci-lint static analysis"
 	@echo "    tidy             Run go mod tidy"
 	@echo "    vulncheck        Run govulncheck vulnerability scanner"
-	@echo "    test             Run Go tests with race detector and coverage"
-	@echo "    build            Build binaries to bin/app and bin/web"
-	@echo "    run              Run local standalone stack (Core API + Web Dashboard)"
-	@echo "    sqlite-e2e       Run fast standalone SQLite E2E test (No-Docker)"
-	@echo "    frontend-e2e     Run standalone HTMX frontend E2E test & snapshot suite"
-	@echo "    docker-e2e       Run full-stack Docker Compose E2E test & Grafana assertions"
-	@echo "    ssg-build        Generate pre-rendered static site HTML and assets (SSG)"
-	@echo "    demo             Launch full-stack interactive demo with seeded data"
+	@echo "    test             Run Go unit tests with race detector and 100% statement coverage"
+	@echo "    oauth-e2e        Run OAuth2 & ACME HTTP-01 E2E tests"
+	@echo "    build            Build binaries to bin/oauth-cli and bin/sample-server"
 	@echo "    release-check    Validate GoReleaser configuration"
 	@echo "    release-snapshot Run GoReleaser snapshot build"
 	@echo "    license-check    Verify license & author headers in Go files"
 	@echo "    license-add      Automatically add license headers to Go files"
-	@echo "    migration-diff   Generate DB migration SQL file with Atlas"
 	@echo "    publish-pr       Verify formatting/lints/tests, push to origin, and create GitHub PR"
 	@echo "    ai-pr            Trigger AI agent to draft a GitHub PR in Japanese"
 	@echo "  Custom Skills Management:"
@@ -37,29 +29,14 @@ help:
 
 # --- Go Development ---
 
-openapi-lint:
-	@echo "==> Running Spectral lint on OpenAPI spec..."
-	@if command -v spectral >/dev/null 2>&1; then \
-		NODE_OPTIONS="--no-deprecation" spectral lint api/openapi.yaml; \
-	elif command -v npx >/dev/null 2>&1; then \
-		NODE_OPTIONS="--no-deprecation" npx -y @stoplight/spectral-cli lint api/openapi.yaml; \
-	else \
-		echo "Spectral CLI is not installed and npx is not available. Please install it."; \
-		exit 1; \
-	fi
-
-generate: openapi-lint
-	@echo "==> Generating code from schema..."
-	@go generate ./...
-
-fmt: generate
+fmt:
 	@echo "==> Formatting Go source files..."
 	@go fmt ./...
 	@if command -v golangci-lint >/dev/null 2>&1; then \
 		golangci-lint run --fix ./...; \
 	fi
 
-lint: generate
+lint:
 	@echo "==> Running golangci-lint..."
 	@golangci-lint run ./...
 
@@ -71,39 +48,18 @@ vulncheck:
 	@echo "==> Running govulncheck..."
 	@go run golang.org/x/vuln/cmd/govulncheck@latest ./...
 
-test: generate
+test:
 	@bash scripts/check_coverage.sh
 
-build: generate
+build:
 	@echo "==> Building binaries..."
 	@mkdir -p bin
-	@go build -v -o bin/app ./cmd/app
-	@go build -v -o bin/web ./cmd/web
+	@go build -v -o bin/oauth-cli ./cmd/oauth-cli
+	@go build -v -o bin/sample-server ./sample-server
 
-run: build
-	@echo "==> Starting local standalone servers..."
-	@bash scripts/run_local.sh
-
-sqlite-e2e: build
-	@echo "==> Running Standalone SQLite E2E tests..."
-	@bash scripts/sqlite_e2e.sh
-
-frontend-e2e: build
-	@echo "==> Running Standalone HTMX Frontend E2E tests..."
-	@bash scripts/frontend_e2e.sh
-
-docker-e2e:
-	@echo "==> Running Full-Stack Docker Compose E2E tests..."
-	@bash scripts/docker_e2e.sh
-
-ssg-build:
-	@echo "==> Generating static site export (SSG)..."
-	@mkdir -p dist/static-site
-	@go run ./cmd/web --ssg-export dist/static-site
-
-demo:
-	@echo "==> Starting Full-Stack Live Demo..."
-	@bash scripts/demo.sh
+oauth-e2e: build
+	@echo "==> Running OAuth2 & ACME HTTP-01 E2E tests..."
+	@go test -v -race ./sample-server/...
 
 release-check:
 	@echo "==> Validating GoReleaser configuration..."
@@ -128,22 +84,6 @@ license-check:
 license-add:
 	@echo "==> Adding license headers to Go source files..."
 	@python3 scripts/check_license.py --add
-
-migration-diff:
-	@if [ -z "$(name)" ]; then \
-		echo "Error: name is required. Usage: make migration-diff name=migration_name"; \
-		exit 1; \
-	fi
-	@if ! command -v atlas >/dev/null 2>&1; then \
-		echo "Atlas CLI is not installed. Please install it from: https://atlasgo.io/"; \
-		exit 1; \
-	fi
-	@echo "==> Generating DB migration DDL with Atlas..."
-	@mkdir -p ent/migrate/migrations
-	@atlas migrate diff $(name) \
-		--dir "file://ent/migrate/migrations" \
-		--to "ent://ent/schema" \
-		--dev-url "sqlite://dev?mode=memory"
 
 publish-pr:
 	@bash scripts/publish_pr.sh
@@ -180,5 +120,5 @@ self-eval:
 
 clean:
 	@echo "==> Cleaning up build artifacts..."
-	@rm -rf bin/ dist/ ent/migrate/migrations/ test_reports/
+	@rm -rf bin/ dist/ test_reports/ coverage.out
 	@go clean -testcache
