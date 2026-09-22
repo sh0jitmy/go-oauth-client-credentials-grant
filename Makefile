@@ -1,6 +1,6 @@
 # Makefile for Go Development & Custom Skills Management
 
-.PHONY: help check install install-agents install-all self-eval generate test fmt lint tidy vulncheck build release-check release-snapshot license-check license-add migration-diff clean openapi-lint publish-pr ai-pr run sqlite-e2e frontend-e2e docker-e2e ssg-build demo
+.PHONY: help check install install-agents install-all self-eval generate test fmt lint tidy vulncheck build release-check release-snapshot license-check license-add migration-diff clean openapi-lint publish-pr ai-pr run sqlite-e2e frontend-e2e docker-e2e oauth-e2e ssg-build demo
 
 help:
 	@echo "Available commands:"
@@ -12,11 +12,12 @@ help:
 	@echo "    tidy             Run go mod tidy"
 	@echo "    vulncheck        Run govulncheck vulnerability scanner"
 	@echo "    test             Run Go tests with race detector and coverage"
-	@echo "    build            Build binaries to bin/app and bin/web"
+	@echo "    build            Build binaries to bin/app, bin/web, bin/oauth-cli, bin/sample-server"
 	@echo "    run              Run local standalone stack (Core API + Web Dashboard)"
 	@echo "    sqlite-e2e       Run fast standalone SQLite E2E test (No-Docker)"
 	@echo "    frontend-e2e     Run standalone HTMX frontend E2E test & snapshot suite"
 	@echo "    docker-e2e       Run full-stack Docker Compose E2E test & Grafana assertions"
+	@echo "    oauth-e2e        Run OAuth2 & ACME HTTP-01 E2E tests"
 	@echo "    ssg-build        Generate pre-rendered static site HTML and assets (SSG)"
 	@echo "    demo             Launch full-stack interactive demo with seeded data"
 	@echo "    release-check    Validate GoReleaser configuration"
@@ -79,6 +80,8 @@ build: generate
 	@mkdir -p bin
 	@go build -v -o bin/app ./cmd/app
 	@go build -v -o bin/web ./cmd/web
+	@go build -v -o bin/oauth-cli ./cmd/oauth-cli
+	@go build -v -o bin/sample-server ./sample-server
 
 run: build
 	@echo "==> Starting local standalone servers..."
@@ -95,6 +98,10 @@ frontend-e2e: build
 docker-e2e:
 	@echo "==> Running Full-Stack Docker Compose E2E tests..."
 	@bash scripts/docker_e2e.sh
+
+oauth-e2e: build
+	@echo "==> Running OAuth2 & ACME HTTP-01 E2E tests..."
+	@go test -v -race ./sample-server/...
 
 ssg-build:
 	@echo "==> Generating static site export (SSG)..."
@@ -180,5 +187,5 @@ self-eval:
 
 clean:
 	@echo "==> Cleaning up build artifacts..."
-	@rm -rf bin/ dist/ ent/migrate/migrations/ test_reports/
+	@rm -rf bin/ dist/ test_reports/ cmd/app/data/ coverage.out
 	@go clean -testcache

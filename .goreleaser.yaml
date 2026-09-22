@@ -1,5 +1,5 @@
 version: 2
-project_name: go_sh0jitmy_template
+project_name: go-oauth-client-credentials-grant
 
 before:
   hooks:
@@ -15,9 +15,9 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X github.com/shjtmy/go_sh0jitmy_template/internal/version.Version={{.Version}}
-      - -X github.com/shjtmy/go_sh0jitmy_template/internal/version.Commit={{.Commit}}
-      - -X github.com/shjtmy/go_sh0jitmy_template/internal/version.Date={{.Date}}
+      - -X github.com/shjtmy/go-oauth-client-credentials-grant/internal/version.Version={{.Version}}
+      - -X github.com/shjtmy/go-oauth-client-credentials-grant/internal/version.Commit={{.Commit}}
+      - -X github.com/shjtmy/go-oauth-client-credentials-grant/internal/version.Date={{.Date}}
     goos:
       - linux
       - darwin
@@ -35,9 +35,29 @@ builds:
       - -trimpath
     ldflags:
       - -s -w
-      - -X github.com/shjtmy/go_sh0jitmy_template/internal/version.Version={{.Version}}
-      - -X github.com/shjtmy/go_sh0jitmy_template/internal/version.Commit={{.Commit}}
-      - -X github.com/shjtmy/go_sh0jitmy_template/internal/version.Date={{.Date}}
+      - -X github.com/shjtmy/go-oauth-client-credentials-grant/internal/version.Version={{.Version}}
+      - -X github.com/shjtmy/go-oauth-client-credentials-grant/internal/version.Commit={{.Commit}}
+      - -X github.com/shjtmy/go-oauth-client-credentials-grant/internal/version.Date={{.Date}}
+    goos:
+      - linux
+      - darwin
+      - windows
+    goarch:
+      - amd64
+      - arm64
+
+  - id: oauth-cli
+    binary: oauth-cli
+    main: ./cmd/oauth-cli
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    ldflags:
+      - -s -w
+      - -X github.com/shjtmy/go-oauth-client-credentials-grant/internal/version.Version={{.Version}}
+      - -X github.com/shjtmy/go-oauth-client-credentials-grant/internal/version.Commit={{.Commit}}
+      - -X github.com/shjtmy/go-oauth-client-credentials-grant/internal/version.Date={{.Date}}
     goos:
       - linux
       - darwin
