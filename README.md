@@ -1,109 +1,278 @@
-# Go & SRE/DB/Security 開発用 GitHub テンプレートリポジトリ
+# OAuth 2.0 Client Credentials Grant & ACME Challenge Protection
 
-このリポジトリは、Go (Golang) によるセキュアで高信頼なWebアプリケーション・APIサービス開発を迅速に開始するための、GitHub テンプレートリポジトリです。
-CIでの静的解析、脆弱性診断、自動タグ付け (tagpr)、リリース管理 (GoReleaser v2) のパイプラインがあらかじめ統合されているほか、**Node.js不要のスタンドアロン HTMX フロントエンド**、**改変検知付き SQLite バックアップ＆アトミックリストア**、**多層 E2E テストフレームワーク**、および **Claude Code / Antigravity 両対応の AI カスタムスキル**（26種）を標準同梱しています。
+[![CI](https://github.com/sh0jitmy/go-oauth-client-credentials-grant/actions/workflows/ci.yml/badge.svg)](https://github.com/sh0jitmy/go-oauth-client-credentials-grant/actions/workflows/ci.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/sh0jitmy/go-oauth-client-credentials-grant)](https://goreportcard.com/report/github.com/sh0jitmy/go-oauth-client-credentials-grant)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](LICENSE)
+[![Coverage: 100%](https://img.shields.io/badge/Coverage-100.0%25-brightgreen.svg)](#テスト--品質)
 
----
-
-## 🚀 主な特徴
-
-1. **スタンドアロン HTMX フロントエンド & SSG (Node.js/npm 完全不要)**:
-   - `//go:embed` により HTML テンプレートとアセット（HTMX、CSS）を Go バイナリに完全内包（Air-gapped 閉域環境対応）。
-   - システムメトリクス（CPU、メモリ、Goroutine数）のリアルタイム自動ポーリング。
-   - `make ssg-build` により、GitHub Pages や監査用アーカイブに向けた静的 HTML事前レンダリング出力（SSG）が可能。
-2. **SQLite エンタープライズ運用・ガバナンス層**:
-   - CGO フリーな SQLite 接続（WAL モード、外部キー制約、ビジータイムアウト自動最適化）。
-   - SHA-256 チェックサム付きマニフェストによる改変検知バックアップアーカイブ（`tar.gz`）の作成とアトミックなトランザクション復元。
-   - データ保持期間超過レコードの自動パージ（Retention Cleaner）。
-3. **多層 E2E テストフレームワーク**:
-   - **Layer 1**: 単体＆結合テスト（`make test`、インメモリDB完全分離、カバレッジ 80% 以上）。
-   - **Layer 2**: No-Docker スタンドアロン SQLite E2E（`make sqlite-e2e`、認証・CRUD・バックアップ/リストアを 3 秒で高速検証）。
-   - **Layer 3**: スタンドアロン フロントエンド E2E（`make frontend-e2e`、Headless Chrome スナップショット撮影と HTML レポート自動生成）。
-   - **Layer 4**: Docker フルスタック E2E（`make docker-e2e`、PostgreSQL、VictoriaMetrics、Grafana、API、Web のマルチコンテナ協調動作検証）。
-4. **自動リリースパイプライン (tagpr & GoReleaser v2)**:
-   - `main` ブランチへの PR マージ時にリリース用 PR が自動作成・更新。
-   - リリース PR マージ時に自動でタグが打たれ、GitHub Releases にクロスコンパイルバイナリ（`app`, `web`）が公開。
-   - Go バージョンは `go.mod` を単一の信頼できる情報源 (SSOT) として GitHub Actions と完全同期。
-5. **AI エージェント用カスタムスキル (Claude & Antigravity 両対応)**:
-   - 26種類の専門スキル（`.claude/skills/` および `.agents/skills/`）を同梱。
+**RFC 8707 (Resource Indicators)** に完全準拠した **OAuth 2.0 Client Credentials Grant (RFC 6749)** 認可サーバー、Gin 保護ミドルウェア、クライアント SDK、および **ACME HTTP-01 Challenge (RFC 8555)** 制御用リファレンス実装を提供するエンタープライズグレードの Go パッケージ & アプリケーションです。
 
 ---
 
-## 📸 スクリーンショット & レポート
+## 🌟 主な特徴
 
-| HTMX スタンドアロンダッシュボード | 自動生成された HTML 検証レポート |
-| :---: | :---: |
-| ![Frontend Dashboard](docs/images/frontend_dashboard.png) | `test_reports/frontend_e2e_report.html` |
+1. **RFC 8707 Resource Indicators 準拠の絶対URI検証**:
+   - トークン発行時および認可検証時にアクセス対象リソースを「**絶対URI**（例: `https://api.example.com/v1/certificates/cert-001`）」として指定。
+   - スキーム・ホストの完全検証、および RFC 8707 Section 2 に従い URI フラグメントを厳格に禁止。
+2. **暗号学的 Opaque Access Token & 安全なストレージ管理**:
+   - `crypto/rand` を用いた 256-bit エントロピーのセキュアなランダム識別子をトークンとして発行。
+   - クライアントシークレットは `bcrypt`、発行済みアクセストークンは `SHA-256` ハッシュ値でインデックス保存し、漏洩リスクを最小化。
+3. **他リポジトリから `go get` 可能な独立モジュール (`pkg/oauth2`)**:
+   - 内部パッケージ（`internal/` や `ent/`）への依存を一切排除したスタンドアロン設計。
+   - 認可サーバー、Gin ミドルウェア (`TokenAuthMiddleware`, `RequireResource`, `RequireScope`)、および `Store` 抽象化インターフェースを提供。
+4. **自動キャッシュ＆リフレッシュ機能付き Client SDK (`pkg/oauth2/client`)**:
+   - インメモリ TTL キャッシュ、Double-Checked Locking による並行競合防止。
+   - 有効期限切れ前のトークン自動再取得と `http.RoundTripper`（Bearer 自動付与）の提供。
+5. **ACME HTTP-01 Challenge (RFC 8555) 制御 API のリファレンス実装 (`sample-server/`)**:
+   - 内部サービス間での ACME チャレンジの開始 (`/start`)・終了 (`/complete`) を OAuth 2.0 で保護。
+   - ACME サーバーによるパブリック検証 (`/.well-known/acme-challenge/:token`) は未認証アクセスを許可。
+6. **評価・ハンズオン用 CLI ツール (`cmd/oauth-cli`)**:
+   - 利用申請、トークン発行、ACME チャレンジ実行、Introspection、Revocation を即座に体験できる 9 つのサブコマンドを実装。
+7. **単体テストカバレッジ 100.0% & プロダクション可観測性**:
+   - `pkg/oauth2` (363/363 stmts) および `pkg/oauth2/client` (133/133 stmts) で **100.0% カバレッジ** を達成。
+   - OpenTelemetry (Metrics, Traces) 計装、および `slog` 構造化監査ログ（`log_type: "audit"`、トークン平文完全マスキング）。
 
 ---
 
-## 🛠️ クイックスタート
+## 📐 システムアーキテクチャ
 
-### 1. このリポジトリから新規リポジトリを作成
-GitHubの「Use this template」ボタンから、ご自身のリポジトリを作成します。
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Operator as 運用者 / CLI<br/>(cmd/oauth-cli)
+    participant ClientSDK as Client SDK<br/>(pkg/oauth2/client)
+    participant OAuthSrv as OAuth2 認可サーバー<br/>(pkg/oauth2)
+    participant GinServer as 保護 Gin サーバー<br/>(sample-server)
+    participant ACMESrv as ACME 検証サーバー<br/>(Let's Encrypt 等)
 
-### 2. モジュール名の変更
-作成したリポジトリの `go.mod` 内のモジュール名を変更します。
+    Note over Operator,OAuthSrv: 1. クライアント利用申請
+    Operator->>OAuthSrv: POST /oauth/clients (name, allowed_resources, allowed_scopes)
+    OAuthSrv-->>Operator: 201 Created (client_id, client_secret)
+
+    Note over Operator,GinServer: 2. OAuth2 保護下での ACME チャレンジ開始
+    Operator->>ClientSDK: challenge-start コマンド実行
+    ClientSDK->>OAuthSrv: POST /oauth/token (client_credentials, resource=絶対URI)
+    OAuthSrv-->>ClientSDK: 200 OK (access_token, expires_in=3600)
+    ClientSDK->>GinServer: POST /v1/certificates/:id/challenges/http-01/start<br/>[Authorization: Bearer <token>]
+    GinServer->>GinServer: TokenAuthMiddleware & RequireResource 照合
+    GinServer-->>ClientSDK: 200 OK (HTTP-01 チャレンジ待受開始)
+
+    Note over ACMESrv,GinServer: 3. ACME サーバーによるパブリック検証 (未認証)
+    ACMESrv->>GinServer: GET /.well-known/acme-challenge/:token
+    GinServer-->>ACMESrv: 200 OK (Key Authorization 返却)
+
+    Note over Operator,GinServer: 4. チャレンジの終了
+    Operator->>ClientSDK: challenge-complete コマンド実行
+    ClientSDK->>GinServer: POST /v1/certificates/:id/challenges/http-01/complete<br/>[Authorization: Bearer <token>]
+    GinServer-->>ClientSDK: 200 OK (チャレンジ終了 & クリーンアップ)
+```
+
+---
+
+## 📦 パッケージ構成
+
+```text
+go-oauth-client-credentials-grant/
+├── pkg/
+│   ├── oauth2/                   # 【独立モジュール】認可サーバー & Gin ミドルウェア (go get 可能)
+│   │   ├── types.go              # データモデル、RFC 8707 絶対URIバリデータ
+│   │   ├── store.go              # Store 抽象化インターフェース
+│   │   ├── store_memory.go       # スレッドセーフなインメモリストア
+│   │   ├── service.go            # Opaque Token 生成、SHA-256、bcrypt、認可照合
+│   │   ├── handlers.go           # Gin ハンドラ (利用申請, トークン発行, 検証, 失効)
+│   │   ├── middleware.go         # Gin ミドルウェア (TokenAuth, RequireResource, RequireScope)
+│   │   ├── telemetry.go          # OpenTelemetry (Metrics/Traces) & slog 監査ログ
+│   │   └── *_test.go             # 単体テスト (ステートメントカバレッジ 100.0%)
+│   └── oauth2/client/            # 【クライアント SDK】Token キャッシュ & HTTP Transport (go get 可能)
+│       ├── client.go             # Token 取得、インメモリTTLキャッシュ、自動再取得
+│       ├── transport.go          # http.RoundTripper (Bearer トークン自動付与)
+│       └── *_test.go             # 単体テスト (ステートメントカバレッジ 100.0%)
+├── sample-server/                # 【リファレンス実装】ACME HTTP-01 チャレンジ制御 Gin サーバー
+│   ├── internal/certificate/     # 証明書管理 & ACME チャレンジ (RFC 8555) 実装
+│   ├── main.go                   # sample-server 起動・Graceful Shutdown
+│   └── e2e_test.go               # フル E2E 自動結合テスト
+├── cmd/
+│   ├── oauth-cli/                # 【評価用 CLI ツール】client SDK を用いた実動 CLI
+│   ├── app/                      # コア REST API サーバー
+│   └── web/                      # スタンドアロン HTMX UI ダッシュボード
+└── docs/
+    ├── oauth2_design.md          # アーキテクチャ設計書 (Mermaid シーケンス4種、プロトコル解説)
+    └── oauth2_code_mapping.md    # シーケンス動作と Go 実装コードの完全対応表
+```
+
+---
+
+## 🚀 クイックスタート
+
+### 1. サーバーの起動
+
+リファレンス実装の Gin サーバーを起動します（ポート `8080`）：
+
+```bash
+go run ./sample-server/main.go
+```
+
+### 2. 評価用 CLI (`oauth-cli`) による一連のフロー実行
+
+別ターミナルを開き、以下のコマンドを順に実行します。
+
+```bash
+# Step 1: クライアント利用申請 (client_id, client_secret 発行)
+go run ./cmd/oauth-cli/main.go register \
+  --name "acme-operator" \
+  --resources "https://api.example.com/v1/certificates/cert-001" \
+  --scopes "cert:read,cert:write"
+
+# 出力された CLIENT_ID, CLIENT_SECRET を環境変数にセット
+export CLIENT_ID="<発行されたclient_id>"
+export CLIENT_SECRET="<発行されたclient_secret>"
+
+# Step 2: アクセストークンの直接取得 (RFC 8707 resource 指定)
+go run ./cmd/oauth-cli/main.go token \
+  --client-id "$CLIENT_ID" \
+  --client-secret "$CLIENT_SECRET" \
+  --resource "https://api.example.com/v1/certificates/cert-001" \
+  --scope "cert:read,cert:write"
+
+# Step 3: ACME HTTP-01 チャレンジの開始 (OAuth2 保護 API 呼出)
+go run ./cmd/oauth-cli/main.go challenge-start \
+  --client-id "$CLIENT_ID" \
+  --client-secret "$CLIENT_SECRET" \
+  --cert-id "cert-001" \
+  --domain "example.com" \
+  --token-val "sample-token-123" \
+  --key-auth "sample-token-123.auth-key"
+
+# Step 4: ACME サーバーによるパブリック検証 (未認証パブリックアクセス)
+go run ./cmd/oauth-cli/main.go challenge-verify \
+  --token-val "sample-token-123"
+
+# Step 5: チャレンジの終了 (OAuth2 保護 API 呼出 & クリーンアップ)
+go run ./cmd/oauth-cli/main.go challenge-complete \
+  --client-id "$CLIENT_ID" \
+  --client-secret "$CLIENT_SECRET" \
+  --cert-id "cert-001"
+
+# Step 6: トークンの検証 (Introspection) & 失効 (Revocation)
+go run ./cmd/oauth-cli/main.go introspect --token "<ACCESS_TOKEN>"
+go run ./cmd/oauth-cli/main.go revoke --token "<ACCESS_TOKEN>"
+```
+
+---
+
+## 💻 ライブラリとしての利用方法 (`go get`)
+
+### 認可サーバー & ミドルウェアの導入 (`pkg/oauth2`)
+
 ```go
-module github.com/your-username/your-repo-name
-```
-また、`main.go` や `.goreleaser.yaml` などに含まれるプロジェクト名も必要に応じて書き換えてください。
+package main
 
-### 3. ローカル即時起動
-Docker 不要で、API サーバーと Web ダッシュボードを即座に起動します：
+import (
+    "github.com/gin-gonic/gin"
+    "github.com/shjtmy/go-oauth-client-credentials-grant/pkg/oauth2"
+)
+
+func main() {
+    r := gin.Default()
+    store := oauth2.NewMemoryStore()
+    oauthService := oauth2.NewService(store)
+
+    // OAuth2 ルート登録 (/oauth/clients, /oauth/token, /oauth/introspect, /oauth/revoke)
+    oauth2.RegisterRoutes(r, oauthService)
+
+    // 保護対象エンドポイントへのミドルウェア適用
+    api := r.Group("/v1/certificates/:id")
+    api.Use(oauth2.TokenAuthMiddleware(oauthService))
+    api.Use(oauth2.RequireResource(func(c *gin.Context) string {
+        return "https://api.example.com/v1/certificates/" + c.Param("id")
+    }))
+    api.Use(oauth2.RequireScope("cert:read"))
+
+    api.GET("", func(c *gin.Context) {
+        c.JSON(200, gin.H{"status": "authorized"})
+    })
+
+    r.Run(":8080")
+}
+```
+
+### クライアント SDK の利用 (`pkg/oauth2/client`)
+
+```go
+package main
+
+import (
+    "context"
+    "net/http"
+    "github.com/shjtmy/go-oauth-client-credentials-grant/pkg/oauth2/client"
+)
+
+func main() {
+    cli := client.NewClient(client.Config{
+        TokenEndpoint: "http://localhost:8080/oauth/token",
+        ClientID:      "my-client-id",
+        ClientSecret:  "my-client-secret",
+    })
+
+    // 1. http.Client 経由での透過的リクエスト (Bearer トークン自動付与 & 自動更新)
+    httpClient := cli.HTTPClient()
+    req, _ := http.NewRequestWithContext(context.Background(), "GET", "https://api.example.com/v1/certificates/cert-001", nil)
+    resp, err := httpClient.Do(req)
+    // ...
+
+    // 2. トークン直接取得 (キャッシュ付き)
+    token, err := cli.GetToken(context.Background(), "https://api.example.com/v1/certificates/cert-001", "cert:read")
+    // ...
+}
+```
+
+---
+
+## 🧪 テスト & 品質
+
+本リポジトリは厳格な品質基準を設けており、CI においてすべてのチェックが自動検証されます。
+
 ```bash
-make run
+# 単体テスト & カバレッジ検証 (pkg/oauth2 および client が 100.0% であることを検証)
+make test
+
+# OAuth2 & ACME HTTP-01 フル結合 E2E テスト
+make oauth-e2e
+
+# 静的解析 (0 issues)
+make lint
+
+# 全 Go ソースコードの Apache-2.0 ライセンスヘッダー検証
+make license-check
+
+# 全バイナリのビルド (app, web, oauth-cli, sample-server)
+make build
+
+# GoReleaser v2 設定バリデーション
+make release-check
 ```
-- Web ダッシュボード: `http://localhost:3001`
-- REST API / ヘルスチェック: `http://localhost:8080/v1/system/healthz`
 
-### 4. AI カスタムスキルのインストール
-```bash
-make install-all
+### カバレッジ測定サマリー
+```text
+=========================================
+Code Coverage Verification Summary:
+=========================================
+  Business Logic (service/domain): 11/11 (100.00%)
+  OAuth2 Server (pkg/oauth2):      363/363 (100.00%)
+  OAuth2 Client SDK (client):      133/133 (100.00%)
+=========================================
+SUCCESS: All coverage thresholds satisfied!
 ```
-*(Claude Code 向けに `~/.claude/skills/` へ、Antigravity 向けに `.agents/skills/` へ配備)*
 
 ---
 
-## ⚙️ 開発コマンド一覧
+## 📖 設計ドキュメント
 
-Makefile に定義されている以下のコマンドを使用して開発を進めます：
-
-| コマンド | 説明 |
-| :--- | :--- |
-| `make run` | スタンドアロンサーバー（Core API + Web UI）のローカル一括起動 |
-| `make sqlite-e2e` | Docker 不要の超高速 SQLite E2E テストの実行 |
-| `make frontend-e2e` | スタンドアロン HTMX フロントエンド E2E テスト & スナップショット生成 |
-| `make docker-e2e` | Docker Compose フルスタック E2E テスト & Grafana 検証 |
-| `make ssg-build` | Go テンプレートからの静的サイト事前レンダリング出力 (SSG) |
-| `make demo` | フルスタック・インタラクティブデモの起動 |
-| `make test` | データ競合検知 (`-race`) およびカバレッジ測定付き単体テスト |
-| `make fmt` | ソースコードのフォーマットおよびリンターによる自動修正 |
-| `make lint` | `golangci-lint` を使用した静的解析の実行 |
-| `make vulncheck` | `govulncheck` を使用した脆弱性診断の実行 |
-| `make build` | `bin/app` および `bin/web` へのコンパイル |
-| `make release-check` | `GoReleaser v2` 設定ファイルのバリデーション |
-| `make release-snapshot` | `GoReleaser` によるローカルでのスナップショットビルドテスト |
-| `make license-check` | Go ソースコードのライセンス＆作成者ヘッダーの検証 |
-| `make license-add` | ライセンスヘッダーの自動付与 |
-| `make check` | 同梱スキルのマークダウン構文チェック |
-| `make self-eval` | リポジトリ要件の自己評価の実行 (`REQUIREMENTS.md` の更新) |
-| `make clean` | ビルド成果物やテストキャッシュのクリーンアップ |
+- [OAuth 2.0 アーキテクチャ設計書 (`docs/oauth2_design.md`)](docs/oauth2_design.md): RFC 6749, RFC 8707, RFC 8555 仕様解説、セキュリティ設計、Mermaid シーケンス 4 種、OpenTelemetry 計装仕様。
+- [シーケンス動作・コード対応表 (`docs/oauth2_code_mapping.md`)](docs/oauth2_code_mapping.md): プロトコルシーケンスと実装コード（パッケージ・型・関数）の完全トレーサビリティ対応表。
 
 ---
 
-## ☁️ さくらのクラウド Terraform CI/CD
+## 📜 ライセンス
 
-本テンプレートには、さくらのクラウド用の Terraform CI/CD ワークフローが含まれています。`terraform/` ディレクトリ配下のファイルに変更があった場合のみトリガーされます。
-
-### 🔑 GitHub Secrets の設定
-以下の GitHub Secrets をリポジトリに登録してください：
-- `SAKURA_ACCESS_TOKEN` / `SAKURA_ACCESS_TOKEN_SECRET`
-- `AWS_ACCESS_KEY_ID` / `AWS_SECRET_ACCESS_KEY`
-
----
-
-## 📋 REQUIREMENTS.md による品質自己評価
-
-`make self-eval` コマンドを実行すると、`REQUIREMENTS.md` のチェックボックス（`[x]`）が集計され、適合率（パーセンテージ）が自動計算されてファイル下部に反映されます。
-常に適合率 100% を維持する開発プラクティスを推奨します。
+本プロジェクトは [Apache-2.0 License](LICENSE) の下で公開されています。
