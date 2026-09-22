@@ -1,5 +1,10 @@
 # Changelog
 
+## [v0.0.1](https://github.com/sh0jitmy/go-oauth-client-credentials-grant/commits/v0.0.1) - 2026-09-22
+
+- feat: implement OAuth 2.0 RFC 8707 client credentials grant and ACME challenge protection by @sh0jitmy in https://github.com/sh0jitmy/go-oauth-client-credentials-grant/pull/6
+- feat(ci): add E2E test HTML report generation and GitHub Pages deployment by @sh0jitmy in https://github.com/sh0jitmy/go-oauth-client-credentials-grant/pull/8
+
 ## [v0.0.2](https://github.com/sh0jitmy/go_template/compare/v0.0.1...v0.0.2) - 2026-06-28
 
 - add terraform and coverage check  by @sh0jitmy in https://github.com/sh0jitmy/go_template/pull/8
