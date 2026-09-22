@@ -6,7 +6,7 @@ require (
 	entgo.io/ent v0.14.6
 	github.com/gin-gonic/gin v1.12.0
 	github.com/glebarez/go-sqlite v1.22.0
-	github.com/jackc/pgx/v5 v5.10.0
+	github.com/jackc/pgx/v5 v5.11.0
 	github.com/oapi-codegen/runtime v1.7.0
 	github.com/prometheus/client_golang v1.24.1
 	github.com/stretchr/testify v1.11.1
