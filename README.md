@@ -257,12 +257,36 @@ make release-check
 =========================================
 Code Coverage Verification Summary:
 =========================================
-  Business Logic (service/domain): 11/11 (100.00%)
-  OAuth2 Server (pkg/oauth2):      363/363 (100.00%)
-  OAuth2 Client SDK (client):      133/133 (100.00%)
+  OAuth2 Server & Middleware (pkg/oauth2): 363/363 (100.00%)
+  OAuth2 Client SDK (client):              133/133 (100.00%)
 =========================================
-SUCCESS: All coverage thresholds satisfied!
+SUCCESS: 100.0% unit test statement coverage satisfied!
 ```
+
+---
+
+## 📊 E2E テスト結果 & GitHub Pages レポート
+
+本リポジトリでは、GitHub Actions CI 上で実行される E2E テスト結果を HTML レポートとして自動生成し、公式 Actions (`actions/deploy-pages`) を通じて GitHub Pages に公開しています。
+
+- **公開 URL**: `https://<owner>.github.io/<repo>/` (例: [https://sh0jitmy.github.io/go-oauth-client-credentials-grant/](https://sh0jitmy.github.io/go-oauth-client-credentials-grant/))
+- **表示内容**:
+  - 実行ステータス（ALL PASSED / FAILED）
+  - 実行日時 (UTC/JST)、対象ブランチ、コミット SHA (GitHub コミットへのリンク)
+  - テスト結果メトリクス（Total, Passed, Failed, Skipped, Duration）
+  - 失敗したテスト一覧とエラーメッセージ（テスト失敗時もレポート公開）
+  - **過去の実行履歴テーブル** (過去 50 回分の実行トレンドと成否推移)
+  - 各テストケースの実行ログ詳細（機密情報・アクセストークン・シークレットは自動マスキング）
+
+### ⚙️ GitHub Pages を有効化するための設定手順
+
+リポジトリ管理者は、以下の手順で GitHub Pages を有効化してください：
+
+1. GitHub リポジトリの **Settings** タブを開きます。
+2. 左メニューの **Pages** を選択します。
+3. **Build and deployment** セクションの **Source** ドロップダウンで **「GitHub Actions」** を選択します。
+4. これにより、`main` ブランチへのプッシュ時に `.github/workflows/ci.yml` の `deploy-pages` ジョブが自動実行され、最新のテスト結果が公開されます。
+5. プルリクエスト (PR) 時は、GitHub Actions の **Artifacts** (`e2e-test-reports`) から完全な HTML レポートをダウンロードして確認できます。
 
 ---
 
