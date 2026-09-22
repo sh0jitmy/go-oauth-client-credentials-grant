@@ -26,7 +26,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/shjtmy/go_sh0jitmy_template/ent/user"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/user"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

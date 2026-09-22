@@ -26,10 +26,10 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/shjtmy/go_sh0jitmy_template/ent"
-	"github.com/shjtmy/go_sh0jitmy_template/internal/database"
-	"github.com/shjtmy/go_sh0jitmy_template/internal/service"
-	"github.com/shjtmy/go_sh0jitmy_template/ogen"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/internal/database"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/internal/service"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ogen"
 )
 
 // Server は OpenAPI の ogen.ServerInterface を実装する構造体です。

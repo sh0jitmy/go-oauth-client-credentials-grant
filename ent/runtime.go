@@ -3,8 +3,8 @@
 package ent
 
 import (
-	"github.com/shjtmy/go_sh0jitmy_template/ent/schema"
-	"github.com/shjtmy/go_sh0jitmy_template/ent/user"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/schema"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/user"
 )
 
 // The init function reads all schema descriptors with runtime code

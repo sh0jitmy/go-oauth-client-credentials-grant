@@ -27,7 +27,7 @@ import (
 	"testing"
 
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/shjtmy/go_sh0jitmy_template/ent"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

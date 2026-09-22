@@ -1,4 +1,4 @@
-module github.com/shjtmy/go_sh0jitmy_template
+module github.com/shjtmy/go-oauth-client-credentials-grant
 
 go 1.26.6
 

@@ -11,8 +11,8 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/shjtmy/go_sh0jitmy_template/ent/predicate"
-	"github.com/shjtmy/go_sh0jitmy_template/ent/user"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/predicate"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/user"
 )
 
 // UserQuery is the builder for querying User entities.

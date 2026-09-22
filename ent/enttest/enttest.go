@@ -5,12 +5,12 @@ package enttest
 import (
 	"context"
 
-	"github.com/shjtmy/go_sh0jitmy_template/ent"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent"
 	// required by schema hooks.
-	_ "github.com/shjtmy/go_sh0jitmy_template/ent/runtime"
+	_ "github.com/shjtmy/go-oauth-client-credentials-grant/ent/runtime"
 
 	"entgo.io/ent/dialect/sql/schema"
-	"github.com/shjtmy/go_sh0jitmy_template/ent/migrate"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/migrate"
 )
 
 type (

@@ -24,7 +24,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/shjtmy/go_sh0jitmy_template/ent"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent"
 )
 
 // ExportStaticSite renders dashboard pages to static HTML and copies static assets to outDir.

@@ -10,8 +10,8 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/shjtmy/go_sh0jitmy_template/ent/predicate"
-	"github.com/shjtmy/go_sh0jitmy_template/ent/user"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/predicate"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/user"
 )
 
 const (

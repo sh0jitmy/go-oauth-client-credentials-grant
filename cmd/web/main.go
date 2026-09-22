@@ -27,9 +27,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/shjtmy/go_sh0jitmy_template/internal/database"
-	"github.com/shjtmy/go_sh0jitmy_template/internal/version"
-	"github.com/shjtmy/go_sh0jitmy_template/internal/web"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/internal/database"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/internal/version"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/internal/web"
 	"github.com/urfave/cli/v2"
 )
 

@@ -9,12 +9,12 @@ import (
 	"log"
 	"reflect"
 
-	"github.com/shjtmy/go_sh0jitmy_template/ent/migrate"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/migrate"
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect"
 	"entgo.io/ent/dialect/sql"
-	"github.com/shjtmy/go_sh0jitmy_template/ent/user"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent/user"
 )
 
 // Client is the client that holds all ent builders.

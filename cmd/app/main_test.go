@@ -29,8 +29,8 @@ import (
 
 	// Import glebarez driver to register it for sqlite.
 	entsql "entgo.io/ent/dialect/sql"
-	"github.com/shjtmy/go_sh0jitmy_template/ent"
-	"github.com/shjtmy/go_sh0jitmy_template/internal/web"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/internal/web"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/otel"

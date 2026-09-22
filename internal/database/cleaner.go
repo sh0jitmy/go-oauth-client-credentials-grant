@@ -21,7 +21,7 @@ import (
 	"log/slog"
 	"time"
 
-	"github.com/shjtmy/go_sh0jitmy_template/ent"
+	"github.com/shjtmy/go-oauth-client-credentials-grant/ent"
 )
 
 // PurgeResult summarizes the number of deleted records across tables.
