@@ -12,26 +12,20 @@
 > - **言語の統一**: コミットメッセージは**英語**、それ以外のPR説明、Issue、およびAIによるレビューレポートは**完全な日本語**で記述してください。
 > - **ライセンスヘッダーの維持**: 新規追加した Go ソースコードには必ず Apache-2.0 ライセンスヘッダーを付与し、`make license-check` をパスさせてください。
 > - **単体テストカバレッジ 100% の維持**: `pkg/oauth2` および `pkg/oauth2/client` のステートメントカバレッジは 100.0% を必須要件とします。
+> - **E2E レポートの整合性**: `make oauth-e2e` 実行時に `test_reports/index.html` および `history.json` が生成されます。トークン等の機密情報はマスキングされ、GitHub Pages に自動連携されます。
 
 ## 開発・検証コマンド一覧
 
 ### Go開発 & ローカル実行
-- **OAuth2 & ACME E2E テスト**: `make oauth-e2e`
+- **OAuth2 & ACME E2E テスト (HTML レポート自動生成)**: `make oauth-e2e`
 - **単体テスト & カバレッジ検証**: `make test` (カバレッジ 100% アサーション実行)
 - **静的解析の実行**: `make lint` (`golangci-lint`)
-- **マルチバイナリビルド**: `make build` (`app`, `web`, `oauth-cli`, `sample-server`)
+- **マルチバイナリビルド**: `make build` (`bin/oauth-cli`, `bin/sample-server`)
 - **コードフォーマット**: `make fmt`
 - **脆弱性スキャンの実行**: `make vulncheck`
 - **ライセンスヘッダー検証**: `make license-check`
-- **ローカル一括起動 (API + Web)**: `make run`
-- **静的サイト生成 (SSG)**: `make ssg-build`
-
-### 多層 E2E テスト
-- **OAuth2 & ACME HTTP-01 E2E**: `make oauth-e2e`
-- **No-Docker SQLite E2E**: `make sqlite-e2e`
-- **スタンドアロン HTMX フロントエンド E2E**: `make frontend-e2e`
-- **Docker Compose フルスタック E2E**: `make docker-e2e`
-- **フルスタックライブデモ**: `make demo`
+- **リリース設定の検証**: `make release-check`
+- **ビルド成果物のクリーンアップ**: `make clean`
 
 ### リファレンスサーバー & CLI 実行
 ```bash

@@ -58,8 +58,7 @@ build:
 	@go build -v -o bin/sample-server ./sample-server
 
 oauth-e2e: build
-	@echo "==> Running OAuth2 & ACME HTTP-01 E2E tests..."
-	@go test -v -race ./sample-server/...
+	@bash scripts/oauth_e2e.sh
 
 release-check:
 	@echo "==> Validating GoReleaser configuration..."
